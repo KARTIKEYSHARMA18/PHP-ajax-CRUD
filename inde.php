@@ -1,0 +1,239 @@
+<?php
+$_SESSION['otp'] = rand();
+if
+
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User CRUD</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            gap: 40px;
+            padding: 40px;
+        }
+
+        .form-box, .table-box {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            width: 100%;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .primary-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .edit-btn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ccc;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        #message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="form-box">
+        <h2>User Information</h2>
+
+        <div id="message"></div>
+
+        <form id="userForm">
+            <input type="hidden" id="id" name="id">
+
+            <input type="text" id="name" name="name" placeholder="Name" required>
+            <input type="email" id="email" name="email" placeholder="Email" required>
+            <input type="number" id="age" name="age" placeholder="Age" required>
+
+            <select id="gender" name="gender" required>
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+            <h2 id = "otp">OTP: </h2>
+            <button type="submit" class="primary-btn">Submit</button>
+        </form>
+    </div>
+
+    <div class="table-box">
+        <h2>User List</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Action</th>
+                    <th>password</th>
+                </tr>
+            </thead>
+            <tbody id="userTable"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", loadUsers);
+function showOTP(){
+    const num = document.getElementById('otp');
+    num.innerHTML = Math.random();
+}
+function showMessage(type, text) {
+    const message = document.getElementById("message");
+    message.style.display = "block";
+    message.className = type;
+    message.innerText = text;
+
+    setTimeout(() => {
+        message.style.display = "none";
+    }, 3000);
+}
+
+
+function loadUsers() {
+    fetch("list.php")
+        .then(res => res.text())
+        .then(data => {
+            document.getElementById("userTable").innerHTML = data;
+        })
+        .catch(() => {
+            showMessage("error", "Failed to load users.");
+        });
+}
+
+
+function editUser(id, name, email, age, gender) {
+    document.getElementById("id").value = id;
+    document.getElementById("name").value = name;
+    document.getElementById("email").value = email;
+    document.getElementById("age").value = age;
+    document.getElementById("gender").value = gender;
+}
+
+
+function deleteUser(id) {
+    if(confirm("Are you sure you want to delete this user?")) {
+
+        const formData = new FormData();
+        formData.append("id", id);
+
+        fetch("ajax/delete.php", {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === "success") {
+                showMessage("success", data.message);
+                loadUsers();
+            } else {
+                showMessage("error", data.message);
+            }
+        })
+        .catch(() => {
+            showMessage("error", "Delete failed.");
+        });
+    }
+}
+
+document.getElementById("userForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const id = document.getElementById("id").value;
+    const url = id ? "ajax/edit.php" : "ajax/submit.php";
+
+    const formData = new FormData(this);
+
+    fetch(url, {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === "success") {
+            showMessage("success", data.message);
+            loadUsers();
+            showOTP();
+            this.reset();
+            document.getElementById("id").value = "";
+        } else {
+            showMessage("error", data.message);
+        }
+    })
+    .catch(() => {
+        showMessage("error", "Server error.");
+    });
+});
+
+
+</script>
+
+</body>
+</html>
+
